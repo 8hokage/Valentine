@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import no1 from "./assets/no1/no1.mp4";
 import heartsBg from "./assets/colorful-hearts-background-seamless-pattern-tile-vector.jpg";
 import no2 from './assets/chiyaya/chiyaya.mp4';
@@ -20,7 +20,6 @@ const messages = [
         text: "",
         type: 'incoming',
         video: intro,
-        start: 100,
         hasAnswer: true,
     },
 ]
@@ -30,14 +29,12 @@ const noMessages = [
         text: "",
         type: 'incoming',
         video: no1,
-        start: 100,
         hasAnswer: true,
     },
     {
         text: "",
         type: 'incoming',
         video: no2,
-        start: 100,
         hasAnswer: true,
     },
 ]
@@ -47,7 +44,6 @@ const yesMessages = [
         text: "",
         type: 'incoming',
         video: yes,
-        start: 0,
     },
 ]
 
@@ -61,6 +57,7 @@ export default function App() {
     const [showAnswerButtons, setShowAnswerButtons] = useState(false);
     const [activeSequence, setActiveSequence] = useState(messages);
     const [currentMessage, setCurrentMessage] = useState(messages[0]);
+    const bottomRef = useRef(null);
 
     useEffect(() => {
         if (waitingAnswer) {
@@ -103,6 +100,10 @@ export default function App() {
         return () => clearTimeout(timer);
     }, [waitingAnswer, currentMessage]);
 
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, [history, isTyping, showAnswerButtons]);
+
     const handleAnswer = (answer) => {
         setShowAnswerButtons(false);
         setHistory((prev) => [...prev, { text: answer === "yes" ? "Yes" : "No", type: "outgoing", video: "" }]);
@@ -129,10 +130,10 @@ export default function App() {
                 }}
             />
             <div
-                className="relative max-w-[50vw] m-auto min-h-screen flex flex-col items-center p-2 px-4 overflow-hidden"
+                className="relative max-w-[50vw] md:max-w-[80vw] sm:max-w-[100vw] m-auto min-h-screen flex flex-col items-center p-2 px-4 overflow-hidden"
             >
 
-                <h1 className="relative z-10 text-2xl font-bold m-0">Love chat with <span className="text-red-400 font-bold">Alexander</span></h1>
+                <h1 className="relative z-10 text-2xl font-bold m-0" style={{ fontFamily: "\"Arimo\", sans-serif" }}>Love chat with <span className="text-red-400 font-bold">Alexander</span></h1>
                 <div className="relative z-10 mt-6 flex flex-col justify-start gap-4 w-full">
                     {history.map((message, index) => (
                         <Message key={`${message.type}-${index}`} message={message} />
@@ -149,14 +150,15 @@ export default function App() {
                                 >
                                     Да
                                 </button>
-                                <button
+                                {noCount !== noMessages.length - 1 && <button
                                     onClick={() => handleAnswer("no")}
                                     className="rounded-full border border-slate-600 px-5 py-2 font-semibold"
                                 >
                                     Нет
-                                </button>
+                                </button>}
                             </div>
                         </div>)}
+                    <div ref={bottomRef} />
                 </div>
             </div>
         </main>
@@ -186,20 +188,92 @@ export function Message({ message, isTyping, isAnswer }) {
 
     return <div className="flex" style={{ justifyContent: message.type === 'incoming' ? 'flex-start' : 'flex-end' }}>
         <div className="flex mb-1 flex-col gap-2 max-w-[40%] rounded-[8px] bg-sky-100 px-4 py-3">
-            <p>{message.text}</p>
+            <p style={{ fontFamily: "\"Caveat\", cursive", fontSize: "1.5rem", lineHeight: 1 }}>{message.text}</p>
             {message.video && (
-                <video
-                    className="w-full"
-                    src={message.video}
-                    autoPlay
-                    muted
-                    playsInline
-                    preload="metadata"
-                    onLoadedMetadata={(event) => {
-                        event.currentTarget.muted = false;
-                    }}
-                />
+                <VideoPlayer src={message.video} startAt={startAt} />
             )}
         </div>
     </div>;
+}
+
+function VideoPlayer({ src, startAt }) {
+    const videoRef = useRef(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+    const shouldResumeAfterMetadataRef = useRef(false);
+    const hasAppliedStartRef = useRef(false);
+
+    const tryPlay = (video) => {
+        //video.muted = true;
+        const playPromise = video.play();
+        if (playPromise?.catch) {
+            playPromise
+                .then(() => setAutoplayBlocked(false))
+                .catch(() => setAutoplayBlocked(true));
+        }
+    };
+
+    useEffect(() => { 
+        setIsPlaying(false);
+        setAutoplayBlocked(false);
+        shouldResumeAfterMetadataRef.current = true;
+        hasAppliedStartRef.current = false;
+    }, [src, startAt]);
+
+    const togglePlay = () => {
+        const video = videoRef.current;
+        if (!video) {
+            return;
+        }
+
+        if (video.paused) {
+            shouldResumeAfterMetadataRef.current = true;
+            tryPlay(video);
+        } else {
+            shouldResumeAfterMetadataRef.current = false;
+            video.pause();
+        }
+    };
+
+    return (
+        <div className="relative">
+            <video
+                ref={videoRef}
+                className="w-full rounded-md"
+                src={src}
+                autoPlay
+                preload="metadata"
+                playsInline
+                // onLoadedMetadata={(event) => {
+                //     const video = event.currentTarget;
+                  
+
+                //     if (shouldResumeAfterMetadataRef.current && video.paused) {
+                //         tryPlay(video);
+                //     }
+                // }}
+                onPlay={() => {
+                    setAutoplayBlocked(false);
+                    setIsPlaying(true);
+                }}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+            />
+
+            {!isPlaying && (
+                <button
+                    type="button"
+                    onClick={togglePlay}
+                    className={`absolute inset-0 m-auto h-12 w-12 rounded-full text-white flex items-center justify-center ${
+                        autoplayBlocked ? "bg-black/55" : "bg-black/35"
+                    }`}
+                    aria-label="Play video"
+                >
+                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
+                        <path d="M8 5v14l11-7z" />
+                    </svg>
+                </button>
+            )}
+        </div>
+    );
 }
