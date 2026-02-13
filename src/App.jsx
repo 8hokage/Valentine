@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import no1 from "./assets/no1.mp4";
+import no1 from "./assets/no1/no1.mp4";
 import heartsBg from "./assets/colorful-hearts-background-seamless-pattern-tile-vector.jpg";
-import no2 from './assets/chiyaya.mp4';
+import no2 from './assets/chiyaya/chiyaya.mp4';
 import intro from './assets/whatToDo.mp4';
-import yes from './assets/yes.mp4';
+import yes from './assets/yes/yes.mp4';
 
 const messages = [
     {
@@ -119,9 +119,7 @@ export default function App() {
     }
 
     return (
-        <main
-            className="relative min-h-screen flex flex-col items-center p-2 overflow-hidden"
-        >
+        <main className="relative">
             <div
                 className="absolute inset-0 opacity-15 pointer-events-none"
                 style={{
@@ -130,31 +128,36 @@ export default function App() {
                     backgroundSize: "auto",
                 }}
             />
-            <h1 className="relative z-10 text-2xl font-bold m-0">Love chat with <span className="text-red-400 font-bold">Alexander</span></h1>
-            <div className="relative z-10 mt-6 flex flex-col justify-start gap-4 w-full">
-                {history.map((message, index) => (
-                    <Message key={`${message.type}-${index}`} message={message} />
-                ))}
-                {isTyping && activeSequence[currentMessageIndex] && (
-                    <Message message={activeSequence[currentMessageIndex]} isTyping={isTyping} />
-                )}
-                {waitingAnswer && currentMessage?.hasAnswer && showAnswerButtons && (
-                    <div className="flex justify-end">
-                        <div className="flex gap-2 items-center max-w-[20%] rounded-2xl bg-sky-100 px-4 py-3">
-                            <button
-                                onClick={() => handleAnswer("yes")}
-                                className="rounded-full bg-green-400 px-5 py-2 font-semibold text-slate-900"
-                            >
-                                Yes
-                            </button>
-                            <button
-                                onClick={() => handleAnswer("no")}
-                                className="rounded-full border border-slate-600 px-5 py-2 font-semibold"
-                            >
-                                No
-                            </button>
-                        </div>
-                    </div>)}
+            <div
+                className="relative max-w-[50vw] m-auto min-h-screen flex flex-col items-center p-2 px-4 overflow-hidden"
+            >
+
+                <h1 className="relative z-10 text-2xl font-bold m-0">Love chat with <span className="text-red-400 font-bold">Alexander</span></h1>
+                <div className="relative z-10 mt-6 flex flex-col justify-start gap-4 w-full">
+                    {history.map((message, index) => (
+                        <Message key={`${message.type}-${index}`} message={message} />
+                    ))}
+                    {isTyping && activeSequence[currentMessageIndex] && (
+                        <Message message={activeSequence[currentMessageIndex]} isTyping={isTyping} />
+                    )}
+                    {waitingAnswer && currentMessage?.hasAnswer && showAnswerButtons && (
+                        <div className="flex justify-end">
+                            <div className="flex gap-2 items-center max-w-[30%] rounded-2xl bg-sky-100 px-4 py-3">
+                                <button
+                                    onClick={() => handleAnswer("yes")}
+                                    className="rounded-full bg-green-400 px-5 py-2 font-semibold text-slate-900"
+                                >
+                                    Да
+                                </button>
+                                <button
+                                    onClick={() => handleAnswer("no")}
+                                    className="rounded-full border border-slate-600 px-5 py-2 font-semibold"
+                                >
+                                    Нет
+                                </button>
+                            </div>
+                        </div>)}
+                </div>
             </div>
         </main>
     );
@@ -188,17 +191,12 @@ export function Message({ message, isTyping, isAnswer }) {
                 <video
                     className="w-full"
                     src={message.video}
-                    controls
+                    autoPlay
+                    muted
                     playsInline
+                    preload="metadata"
                     onLoadedMetadata={(event) => {
-                        if (startAt > 0) {
-                            const duration = event.currentTarget.duration;
-                            if (Number.isFinite(duration) && duration > 0) {
-                                event.currentTarget.currentTime = Math.min(startAt, Math.max(duration - 0.1, 0));
-                            } else {
-                                event.currentTarget.currentTime = startAt;
-                            }
-                        }
+                        event.currentTarget.muted = false;
                     }}
                 />
             )}
